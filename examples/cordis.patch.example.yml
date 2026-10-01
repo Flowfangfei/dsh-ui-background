@@ -1,0 +1,17 @@
+# 把插件挂到桌面版 profile 上。
+#
+# 目标文件：$DSH_HOME/profiles/desktop/cordis.patch.yml
+#   Windows 下 $DSH_HOME 默认是 %USERPROFILE%\.dsh
+#
+# 这是一个「插入行」补丁，追加到该文件的末尾即可（它本身是个顶层 YAML 数组）。
+# 把下面的路径换成你克隆本仓库后 background/plugin.mjs 的真实绝对路径。
+#
+# 两个要点：
+#   1. name 写成路径时，dsh-app-boot 的 anchorInsertedPluginNames 会把它锚定成 file:// URL。
+#      Windows 路径用正斜杠更稳妥。
+#   2. 扩展名必须是 .mjs。该目录没有 package.json，.js 会被 Node 当成 CommonJS 解析，
+#      而插件用的是 ESM 语法。
+
+- insert:
+    - id: custom-ui-background
+      name: "C:/path/to/dsh-ui-background/background/plugin.mjs"
