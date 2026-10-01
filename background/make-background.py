@@ -27,6 +27,20 @@ CSS_OUT = HERE / "background.css"
 PREVIEW = HERE / "preview.jpg"
 PREVIEW_DARK = HERE / "preview-dark.jpg"
 
+
+def display_path(path: Path) -> str:
+    """把源图路径写成可公开的相对形式。
+
+    生成的 CSS 会被分享、也可能被贴进 issue，所以绝不写入绝对路径或本机用户名：
+    能相对仓库根表示就相对表示，否则只留文件名。
+    """
+    for base in (HERE.parent, HERE):
+        try:
+            return path.relative_to(base).as_posix()
+        except ValueError:
+            continue
+    return path.name
+
 # ── 主题基色 ────────────────────────────────────────────────────────────────
 DARK_BASE = (21, 21, 23)
 LIGHT_BASE = (255, 255, 255)
@@ -214,7 +228,7 @@ def build_css(payload: bytes, fill: float, border: float, args) -> str:
    ==========================================================================
 
    当前参数：
-     源图           {args.source}
+     源图           {display_path(Path(args.source))}
      柔化半径       {args.blur} px
      暗部提升       gamma {args.gamma}
      饱和度         {args.saturate}
