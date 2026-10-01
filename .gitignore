@@ -1,0 +1,29 @@
+# ── 生成的样式表 ────────────────────────────────────────────────────────────
+# background.css 内嵌了背景图的 base64、体积大，且随时可由 make-background.py 重建。
+# 提交它等于把图片提交两遍，所以不入库。
+background/background.css
+
+# ── 本地背景图与派生预览 ────────────────────────────────────────────────────
+# 请勿把第三方画稿提交到这个仓库：公开发布有版权风险，也会让仓库体积失控。
+# 使用者自备的图放到 background/source.jpg 即可，本文件已将其排除。
+#
+# 注意：background/placeholder.jpg 是本仓库自带的原创占位图，
+#       由 tools/make-placeholder.py 程序合成，可自由分发，故意不被这些规则匹配。
+background/source*.jpg
+background/source*.jpeg
+background/source*.png
+background/source*.webp
+background/preview*.jpg
+background/variants*.jpg
+
+# ── Python ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── 编辑器 / 系统 ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
