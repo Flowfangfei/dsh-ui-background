@@ -1,0 +1,366 @@
+/* ==========================================================================
+   视觉验证台的「应用侧样式」。
+
+   这里的每一条声明都抄自安装版 bundle 里 composer 那一段 DOM 链，只把哈希类名
+   换成可读名（`BynINW_` → AppFrame、`Dc7zOa_` → ConversationRoot、
+   `j_8BDW_` / `RlGAzG_` → InputBar、`aSus8q_` → TodoPanel），声明本身一字未改
+   （唯一的例外在文件末尾「验证台的固定量」一节，那是验证台自己的钉值）。
+
+   为什么要抄一份而不是直接量真实界面：桌面版的 Web 界面要求启动令牌，进程外
+   抓不到渲染后的 index.html（见 README「已知限制」）。抄一份等价的链，就能在
+   无头浏览器里把「合成结果」逐像素量出来。
+
+   ⚠ 它是一份快照，不是活引用。DSH 升级后若这条链的结构变了（某个祖先多了一层
+   底色、停靠卡片不再用 backdrop-filter……），必须回来同步，否则验证台会替一份
+   过期的结构背书。
+   抄录时的安装版版本：0.1.5-alpha.1。
+   ========================================================================== */
+
+/* ── 验证台自己的固定量（不是应用规则）────────────────────────────────────
+   把标题栏高度、停靠卡片与输入卡片的尺寸钉死，验证台才能从截图尺寸直接算出
+   座位、停靠卡片各自的矩形，不必去问浏览器。 */
+:root {
+  --dsh-windows-titlebar-height: 40px;
+  --dsw-radius-panel: 16px;
+  --dsw-radius-lg: 12px;
+  --dsw-alias-label-primary: #e6e6e6;
+  /* 座位高 = 停靠卡片 56 + 栈间距 6 + 输入区（上内边距 8 + 卡片 96 + 下内边距 12）*/
+  --fixture-seat-height: 178px;
+  --fixture-dock-height: 56px;
+  /* 验证台浮层的尺寸（矩形由 Python 侧据此算） */
+  --fixture-banner-height: 28px;
+  --fixture-banner-top: 40px;
+  --fixture-menu-w: 320px;
+  --fixture-menu-h: 120px;
+  --fixture-menu-left: 300px;
+  --fixture-menu-top: 200px;
+  --fixture-modal-w: 500px;
+  --fixture-modal-h: 240px;
+  /* 模态浮层只盖这么高，避开输入框座位那一带（见 .floatOverlay 的说明） */
+  --fixture-modal-region-h: 560px;
+  /* 关掉的右侧栏面板：宽度是「保留宽度」，收起时盒子并不会收成 0 */
+  --fixture-closed-panel-w: 320px;
+}
+
+/* ── 应用：base.css ─────────────────────────────────────────────────────── */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font: 14px/22px system-ui, "Segoe UI", sans-serif;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  background: var(--dsw-alias-bg-base, #fff);
+}
+
+/* ── 应用：gradient-shadow-text.css ────────────────────────────────────── */
+body {
+  /* 菜单/浮层的毛玻璃。停靠卡片的 backdrop-filter 读的就是这一个。 */
+  --dsw-mask-blur: none;
+  --dsw-menu-backdrop-filter: blur(40px) saturate(150%);
+  /* 下面两个是应用 theme 里的值，插件**不**覆盖它们，照抄安装版的实测值：
+     MenuSurface 材料层的底色（浅色 58% / 深色 45% 不透明）、模态遮罩。 */
+  --dsw-menu-surface-fill: #f8f9fa94;
+  --dsw-alias-bg-mask-1: #0000003d;
+}
+
+body[data-ds-dark-theme] {
+  --dsw-menu-surface-fill: #43454a73;
+  --dsw-alias-bg-mask-1: #00000080;
+}
+
+body,
+body * {
+  --dsw-elevation-stroke: 0 0 0 0.5px var(--dsw-elevation-stroke-color);
+  --dsw-elevation-panel:
+    var(--dsw-elevation-stroke), 0 3px 8px 0 rgba(0, 0, 0, 0.03), 0 0 16px 0 rgba(0, 0, 0, 0.02);
+  --dsw-elevation-soft:
+    var(--dsw-elevation-stroke), 0 4px 16px 0 rgba(0, 0, 0, 0.03), 0 0 24px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* ── 应用：AppFrame.module.css ──────────────────────────────────────────── */
+.frame {
+  background: var(--dsw-alias-bg-base);
+  grid-template-rows: 100%;
+  height: 100%;
+  display: grid;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-windows-titlebar] .frame {
+  --dsh-windows-content-radius: 16px;
+  box-sizing: border-box;
+  padding-top: var(--dsh-windows-titlebar-height);
+  background: var(--dsw-specific-sidebar-fill);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.centerCol {
+  flex-direction: column;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+[data-windows-titlebar] .centerCol {
+  background: var(--dsw-alias-bg-base);
+  border-radius: var(--dsh-windows-content-radius) 0 0 0;
+}
+
+/* ── 应用：ConversationRoot.module.css ──────────────────────────────────── */
+.convRoot {
+  background: var(--dsw-alias-bg-base);
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  position: relative;
+}
+
+.convBody {
+  --dsh-chat-content-width: var(
+    --dsh-chat-user-width,
+    clamp(680px, calc(var(--dsh-conversation-column-width, 0px) * 0.64), 920px)
+  );
+  --dsh-composer-card-max-width: calc(var(--dsh-chat-content-width) + 32px);
+  --dsh-composer-side-clearance: 16px;
+  --dsh-composer-dock-inset: 8px;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+.scrollBody {
+  scrollbar-gutter: stable;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin-right: 2px;
+  display: flex;
+  overflow-y: auto;
+}
+
+.convRoot[data-phase="active"] .viewArea {
+  flex: 1 0 auto;
+  min-height: auto;
+}
+
+.composerStack {
+  --dsh-composer-stack-gap: 6px;
+  gap: var(--dsh-composer-stack-gap);
+  flex-direction: column;
+  display: flex;
+}
+
+.composerSeat {
+  --dsh-composer-text-max-height: 336px;
+  flex-direction: column;
+  flex: none;
+  display: flex;
+}
+
+/* 这一条是第 5 段改动的靶心：应用的「输入遮掩」就是座位自己那层
+   linear-gradient。底色不透明时它挡住正文；插件把底色改成 rgba(...,0.10)
+   之后，正文就从这层下面透出来了。验证台必须原样保留它。 */
+.convRoot[data-phase="active"] .composerSeat {
+  z-index: 7;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--dsw-alias-bg-base) 0%, transparent) 0px,
+    var(--dsw-alias-bg-base) 36px
+  );
+  position: sticky;
+  bottom: 0;
+}
+
+/* ── 应用：TodoPanel.module.css .root ───────────────────────────────────
+   按安装版抄（源码树里已改成 --dsw-specific-tip 且不再带毛玻璃）。 */
+.dockCard {
+  box-sizing: border-box;
+  width: calc(
+    100% - var(--dsh-composer-side-clearance) - var(--dsh-composer-side-clearance) -
+      var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) -
+      var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset)
+  );
+  max-width: calc(
+    var(--dsh-composer-card-max-width) - var(--dsh-composer-dock-inset) -
+      var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) -
+      var(--dsh-composer-dock-inset)
+  );
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l1);
+  border-radius: var(--dsw-radius-lg);
+  background: var(--dsw-specific-menu);
+  /* 毛玻璃：卡片盖住的背景图会被这一步糊成 blur(40px) saturate(150%)。 */
+  backdrop-filter: var(--dsw-menu-backdrop-filter);
+  box-shadow: var(--dsw-elevation-panel);
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  border: 0;
+  flex: none;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* ── 应用：TodoPanel.module.css .body / .header / .title ────────────────── */
+.dockBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 12px;
+}
+
+.dockHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.dockTitle {
+  flex: none;
+  font-size: 13px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* ── 应用：InputBar.module.css ─────────────────────────────────────────── */
+.barRoot {
+  padding: 8px calc(var(--dsh-composer-side-clearance) + 16px) 12px;
+  flex-direction: column;
+  align-items: center;
+  display: flex;
+}
+
+.card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--dsh-composer-card-max-width);
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-panel);
+  background: var(--dsw-specific-input-major);
+  box-shadow: var(--dsw-elevation-soft);
+}
+
+/* ── 验证台的固定量：让各块矩形可预测 ────────────────────────────────────
+   应用里卡片高度由内容（草稿行数、任务条数）决定，停靠卡片的宽度还带一长串
+   calc；验证台把这些钉成定值，Python 侧才能从「视口高度 − 座位高」算出座位
+   矩形、从「座位顶 + 停靠卡片高」算出停靠卡片矩形。 */
+.dockCard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  height: var(--fixture-dock-height);
+}
+
+.card {
+  height: 96px;
+  padding: 12px 16px;
+}
+
+.composerSeat {
+  height: var(--fixture-seat-height);
+}
+
+/* ── 验证台加的浮层：三类「压在别的内容之上」的表面 ──────────────────────
+   类名故意用应用里那三种写法的后缀，好让第 7 段的选择器命中：
+     probe_bannerWrap                 元素自身画底色（吸顶条）
+     probe_surface + probe_material   底色画在 .material 子元素上（MenuSurface 家族）
+     probe_overlay + probe_panel      全屏浮层 + 居中面板（模态，背后有遮罩）
+   尺寸全部钉死，Python 侧据此算矩形。 */
+.floatBanner {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  height: var(--fixture-banner-height);
+  padding: 3px 24px;
+  box-sizing: border-box;
+  background: var(--dsw-alias-bg-base);
+}
+
+.floatSurface {
+  position: absolute;
+  left: 300px;
+  top: 200px;
+  z-index: 100;
+  isolation: isolate;
+  width: var(--fixture-menu-w);
+  height: var(--fixture-menu-h);
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+/* 应用里 MenuSurface 的材料层：所有共享菜单的唯一底色层。 */
+.floatMaterial {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--dsw-menu-surface-fill);
+  backdrop-filter: var(--dsw-menu-backdrop-filter);
+  pointer-events: none;
+}
+
+.floatOverlay {
+  position: fixed;
+  /* 只盖上半屏：应用里的浮层是 inset:0 盖满全屏，但那会把输入框座位那一带也盖住，
+     干扰「座位那一带与改前一致」的对比。这里缩到上半屏，够测模态这一种写法。 */
+  inset: 0 0 auto;
+  height: var(--fixture-modal-region-h);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floatMask {
+  position: absolute;
+  inset: 0;
+  background: var(--dsw-alias-bg-mask-1);
+}
+
+/* 关掉的右侧栏面板（安装版 0.1.5 的写法）：容器**自己不画底色**，盒子还在、
+   还保留着宽度，靠隐藏子元素来收起。它跟真正的「表面」的区别就在这里。 */
+.closedPanel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--fixture-closed-panel-w);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.closedPanelBody {
+  transform: translateX(100%);
+  visibility: hidden;
+}
+
+.floatPanel {
+  position: relative;
+  z-index: 1;
+  width: var(--fixture-modal-w);
+  height: var(--fixture-modal-h);
+  padding: 16px;
+  box-sizing: border-box;
+  border-radius: 32px;
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+/* ── 验证台的正文排版（应用规则之外）──────────────────────────────────── */
+.viewArea {
+  padding: 8px 0;
+}
+
+.row {
+  padding: 3px 24px;
+  white-space: nowrap;
+  overflow: hidden;
+}

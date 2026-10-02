@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN" data-windows-titlebar>
+  <head>
+    <meta charset="utf-8" />
+    <title>DSH composer 遮挡与毛玻璃：视觉验证台</title>
+    <!-- 应用侧的 DOM 链样式，抄自安装版 bundle（见同名 .css 的说明） -->
+    <link rel="stylesheet" href="visual-fixture.css" />
+    <script>
+      // 在 head 里同步决定加载哪一份背景样式表，避免首帧用错主题再重排。
+      //   ?css=<相对本文件的路径>   默认 ../background/background.css（仓库里正在生效的那份）
+      const query = new URLSearchParams(location.search)
+      const background = document.createElement('link')
+      background.rel = 'stylesheet'
+      background.href = query.get('css') || '../background/background.css'
+      document.head.append(background)
+    </script>
+  </head>
+  <!-- data-ds-dark-theme 装在 body 上：应用就是这么装的（body[data-ds-dark-theme]），
+       插件里所有深色规则也都写成 html body[data-ds-dark-theme]。装到 <html> 上会
+       悄悄退化成浅色主题，验证台就测不到你真正在用的那一套。 -->
+  <body data-ds-dark-theme>
+    <!-- 与应用一致的容器链：布局与合成顺序都靠它，不能省略任何一层 -->
+    <div id="root">
+      <div class="frame">
+        <div class="centerCol">
+          <div class="convRoot" data-phase="active">
+            <div class="convBody" data-conversation-content data-content-phase="active">
+              <div class="scrollBody" data-conversation-scroll>
+                <!-- 槽位锚点在应用里是 display:contents，这里照抄 -->
+                <div data-slot="conversation.session" style="display: contents">
+                  <div class="viewArea" id="view-area">
+                    <!-- 吸顶条：元素自身画底色那类浮层（代码块 banner 的写法） -->
+                    <div class="floatBanner probe_bannerWrap" id="float-banner">
+                      <span class="surfaceText">吸顶条占位</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- 菜单：底色画在 .material 子元素上（MenuSurface 家族的写法） -->
+                <div class="floatSurface probe_surface" id="float-menu">
+                  <div class="floatMaterial probe_material"></div>
+                  <span class="surfaceText">菜单占位</span>
+                </div>
+                <!-- 关掉的右侧栏面板（安装版 0.1.5 的写法）：**容器自己不画底色**，
+                     盒子还在、还保留着宽度，靠隐藏子元素来收起。第 7 段是按类名结尾
+                     匹配的，一不小心就会给这个容器铺一层不透明背景，把主对话区右侧
+                     整块挡掉 —— 这就是要防的回归，见 with_hidden_guard。 -->
+                <div class="closedPanel probe_panel" id="closed-panel"
+                     aria-hidden="true" data-sidebar-right-panel="push">
+                  <div class="closedPanelBody">关掉的右侧栏面板内容</div>
+                </div>
+                <div class="composerSeat" data-composer-seat>
+                  <div class="composerStack">
+                    <!-- 停靠卡片（应用里是 todo / queue / goal 三个入口，同一个槽位） -->
+                    <div data-slot="conversation.input.dock" style="display: contents">
+                      <section class="dockCard" id="dock-card">
+                        <div class="dockBody">
+                          <div class="dockHeader">
+                            <span class="dockTitle" id="dock-title">任务　11 已完成</span>
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+                    <div data-slot="conversation.composer" style="display: contents">
+                      <div class="barRoot">
+                        <div class="card">输入框内容占位 —— 这一行必须始终可见</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 模态：全屏浮层 + 遮罩 + 居中面板（设置页/模态的写法） -->
+        <div class="floatOverlay probe_overlay" id="float-overlay">
+          <div class="floatMask"></div>
+          <div class="floatPanel probe_panel" id="float-panel">
+            <span class="surfaceText">设置页占位</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 正文：够长就会滚到输入框下面去。解析期同步插入，截图时不会再有变化。
+      // 用 insertAdjacentHTML 而不是 innerHTML：吸顶条已经在这个容器里了，别覆盖掉。
+      document.getElementById('view-area').insertAdjacentHTML(
+        'beforeend',
+        Array.from(
+          { length: 60 },
+          (_, index) =>
+            `<div class="row">第 ${String(index + 1).padStart(2, '0')} 行正文 —— 翻到输入框下面的文字必须消失，且不得与输入框内容叠在一起。</div>`,
+        ).join(''),
+      )
+
+      const params = new URLSearchParams(location.search)
+      const scroller = document.querySelector('[data-conversation-scroll]')
+      const seat = document.querySelector('[data-composer-seat]')
+
+      // ?hide=<逗号分隔>，每一项让一块内容「保留布局但不画像素」——
+      // 正是合成结果里它盖住别的东西之前的那一幕：
+      //   transcript  正文不画     → 取「本该看到的背景」那一侧
+      //   dock        停靠卡片不画 → 取同一块矩形上的裸背景，量毛玻璃用
+      //   docktext    卡片文字不画 → 卡片表面照画，但矩形里没有文字干扰
+      //   surfacetext 浮层自己的文字不画 → 浮层矩形里只剩「它遮住的背景」，
+      //              这样比「正文画 / 不画」时不会掺进字体抗锯齿的抖动
+      //   closedpanel 关掉的右侧栏面板不画 → 用来验证「我们没给那个容器铺背景」：
+      //              照画 / 不画两张图在它矩形里必须一模一样
+      const hidden = new Set((params.get('hide') ?? '').split(',').filter(Boolean))
+      if (hidden.has('transcript')) document.getElementById('view-area').style.visibility = 'hidden'
+      if (hidden.has('dock')) document.getElementById('dock-card').style.visibility = 'hidden'
+      if (hidden.has('docktext')) document.getElementById('dock-title').style.visibility = 'hidden'
+      if (hidden.has('closedpanel')) document.getElementById('closed-panel').style.visibility = 'hidden'
+      if (hidden.has('surfacetext')) {
+        for (const node of document.querySelectorAll('.surfaceText')) node.style.visibility = 'hidden'
+      }
+
+      // 照抄应用：把座位高度发布到滚动容器上（as ConversationContent.tsx）。
+      // 现在的实现不用这个值，但验证台必须和应用保持同一个契约。
+      if (typeof ResizeObserver === 'function' && seat !== null) {
+        const publish = () => {
+          scroller.style.setProperty('--dsh-composer-height', `${seat.offsetHeight}px`)
+          scroller.style.setProperty(
+            '--dsh-conversation-viewport-height',
+            `${scroller.clientHeight}px`,
+          )
+        }
+        publish()
+        new ResizeObserver(publish).observe(seat)
+        new ResizeObserver(publish).observe(scroller)
+      }
+
+      const target = Number(params.get('scroll') || 0)
+      const applyScroll = () => {
+        scroller.scrollTop = target
+      }
+      applyScroll()
+      addEventListener('load', () => {
+        applyScroll()
+        requestAnimationFrame(applyScroll)
+      })
+    </script>
+  </body>
+</html>

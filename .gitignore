@@ -16,6 +16,11 @@ background/source*.webp
 background/preview*.jpg
 background/variants*.jpg
 
+# ── 视觉验证台的临时产物 ────────────────────────────────────────────────────
+# 截图、差分图、由当前样式表合成的基准样式表、无头浏览器 profile，都在这里，
+# 每次跑 verify/visual-check.py 重新生成。
+verify/.tmp/
+
 # ── Python ─────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
