@@ -1,0 +1,54 @@
+{
+  "captured_at": "2026-10-03T01:57:46+08:00",
+  "kind": "offline-fixture-crop",
+  "theme": "dark",
+  "layout": "windows-titlebar",
+  "command": "python -X utf8 verify/visual-check.py",
+  "browser": "Microsoft Edge 154.0.4258.48",
+  "viewport_px": [
+    1000,
+    800
+  ],
+  "scroll_px": 900,
+  "background": "background/placeholder.jpg",
+  "generator_options": {
+    "fill": 0.1,
+    "border": 0.22,
+    "gamma": 0.7,
+    "blur": 0,
+    "saturate": 1.0
+  },
+  "fixture_recorded_dsh_version": "0.1.5-alpha.1",
+  "baseline": "current generated CSS with sections 5-7 removed; not stock DSH",
+  "hidden_text": [
+    "surfacetext",
+    "docktext"
+  ],
+  "postprocessing": "existing visual-check.py rectangle crops; no pixel retouching",
+  "assets": [
+    {
+      "file": "fixture-before-input.png",
+      "source": "verify/.tmp/band-before-visible.png",
+      "sha256": "169d3930c5012753125c0806c863e49bab0dbc077e0b67b99a892f270dc5d0ba",
+      "bytes": 80286
+    },
+    {
+      "file": "fixture-after-input.png",
+      "source": "verify/.tmp/band-after-visible-900.png",
+      "sha256": "bdef14bbb23e27b80e6b78e71c3d4b8930e3ec1848b979b1813ecd1dd07fb329",
+      "bytes": 103541
+    },
+    {
+      "file": "fixture-before-dock.png",
+      "source": "verify/.tmp/dock-before-docktext.png",
+      "sha256": "3f3a5dd2a553d72d2465bde8ed093e0b331a35820d7a6bf15752c4c8210c9f03",
+      "bytes": 2251
+    },
+    {
+      "file": "fixture-after-dock.png",
+      "source": "verify/.tmp/dock-after-docktext.png",
+      "sha256": "9894fea96f17804b0e89fcf9de2ce0169f7c5ed2f3e111b9141b41623396c7f0",
+      "bytes": 22840
+    }
+  ]
+}

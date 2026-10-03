@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""生成不透明度对比图 —— 把同一张背景在不同 --canvas 档位下的近似观感拼成一张图。
+"""生成不透明度对比图 —— 把同一张背景在不同 --fill 档位下的近似观感拼成一张图。
 
 用法：
-    python preview-variants.py                      # 默认对比 0.50 / 0.58 / 0.65 / 0.72
-    python preview-variants.py --blur 8 --canvas 0.55 0.65 0.75
+    python preview-variants.py                      # 默认对比 0.00 / 0.12 / 0.24 / 0.36
+    python preview-variants.py --blur 8 --fill 0.12 0.24 0.36
     python preview-variants.py --theme light        # 看浅色主题下的观感
 
 输出 variants.jpg。选好档位后再用 make-background.py 正式生成 background.css。

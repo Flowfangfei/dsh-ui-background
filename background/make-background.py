@@ -2,15 +2,14 @@
 """生成 background.css —— 让桌面版 DSH 的界面表面透明、露出背景图，并用细边框区分面板。
 
 用法示例：
-    python make-background.py                            # 推荐默认：面板留 12% 底色 + 边框
+    python make-background.py                            # 默认：面板留 10% 底色 + 边框
     python make-background.py --fill 0                   # 面板完全透明（亮区文字会更难读）
     python make-background.py --fill 0.18 --border 0.40  # 面板更实、边框更亮
     python make-background.py --source "D:/x/BG.jpg" --blur 0
 
-改完刷新浏览器页面即可生效，DSH 不用重启（plugin.mjs 每次 index 渲染都重读本 CSS）。
+已挂载插件时，改完刷新页面即可重读 CSS；首次挂载或卸载须重启 DSH。
 
-⚠ 参数联动：面板一旦接近全透明，它就不再压暗背景图，所以 --gamma 应保持 1.0。
-   之前用来压住亮度的 gamma 0.75 / saturate 会显得发灰。
+--gamma 默认 0.70，会提升暗部；图片已足够明亮时可用 1.0 保留原色调。
 """
 from __future__ import annotations
 
@@ -484,7 +483,7 @@ def build_css(payload: bytes, fill: float, border: float, args) -> str:
      表面填充 alpha {fill}      (0 = 完全透明，越大面板越实)
      边框 alpha     {border}    (越大发丝线越亮)
 
-   六段结构：
+   七段结构：
    1. 背景图铺在 <html> 上，同时抽成 --dsh-ui-bg-image 供第 5 段复用；
       <body> 底色置透明。
    2. 把 {len(SURFACE_TOKENS)} 个表面填充 token 改成半透明，黑色块就会透出背景图。
