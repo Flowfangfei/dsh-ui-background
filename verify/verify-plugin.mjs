@@ -173,9 +173,12 @@ const BEFORE_MATERIAL = /BEFORE_MATERIAL\s*=\s*"([^"]+)"/.exec(python)?.[1]
 const surfaceTable = /OCCLUDED_SURFACES\s*=\s*\[([\s\S]*?)\n\]/.exec(python)[1]
   .replaceAll('f"{SIDEBAR_SCOPE} ', `"${SIDEBAR_SCOPE} `)
   .replaceAll('{BEFORE_MATERIAL}', BEFORE_MATERIAL)
+  .replaceAll('(BEFORE_MATERIAL,', `("${BEFORE_MATERIAL}",`)
+const declaredSurfaceCount = [...surfaceTable.matchAll(/^\s*\(/gm)].length
 const OCCLUDED_SURFACES = [...surfaceTable.matchAll(/\("([^"]*)",\s*"(--dsw-[a-z0-9-]+)",\s*"([a-z]+)"/g)]
   .map(m => ({ selector: m[1], fill: m[2], region: m[3] }))
-check(OCCLUDED_SURFACES.length >= 18, '从生成器解析出浮层清单', `${OCCLUDED_SURFACES.length} 条`)
+check(declaredSurfaceCount > 0 && OCCLUDED_SURFACES.length === declaredSurfaceCount,
+  '完整解析生成器的浮层清单', `${OCCLUDED_SURFACES.length} / ${declaredSurfaceCount} 条`)
 
 /** 声明的值里有几层：只数顶层逗号，rgb()/linear-gradient() 里的不算。 */
 function layerCount(block, property) {
